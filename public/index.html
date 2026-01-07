@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Code Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <style>
+        body { margin: 0; background: #282a36; font-family: sans-serif; }
+        .header { padding: 10px; background: #44475a; color: white; text-align: center; }
+        /* Make editor take full height */
+        .CodeMirror { height: 90vh; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="header">Real-Time Cloud Editor (Share URL to Collaborate)</div>
+    
+    <textarea id="code-editor"></textarea>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
