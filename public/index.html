@@ -3,24 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Code Editor</title>
+    <title>Cloud IDE Pro</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
+    
     <style>
-        body { margin: 0; background: #282a36; font-family: sans-serif; }
-        .header { padding: 10px; background: #44475a; color: white; text-align: center; }
-        /* Make editor take full height */
-        .CodeMirror { height: 90vh; font-size: 16px; }
+        :root {
+            --bg-base: #181a1f;
+            --bg-sidebar: #21252b;
+            --bg-editor: #282c34;
+            --bg-hover: #323842;
+            --text-main: #abb2bf;
+            --text-muted: #5c6370;
+            --accent: #61afef;
+            --accent-green: #98c379;
+            --border: #181a1f;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base); color: var(--text-main);
+            font-family: 'Inter', sans-serif; display: flex;
+            flex-direction: column; height: 100vh; overflow: hidden;
+        }
+
+        /* Topbar */
+        .topbar {
+            height: 40px; background-color: var(--bg-sidebar); display: flex; 
+            justify-content: space-between; align-items: center; padding: 0 15px; 
+            border-bottom: 1px solid var(--border); font-size: 13px;
+        }
+        .brand { color: #fff; font-weight: 600; display: flex; align-items: center; gap: 8px;}
+        .brand i { color: var(--accent); }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+        
+        .btn {
+            background: var(--bg-hover); color: var(--text-main); border: 1px solid transparent; 
+            padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; 
+            font-weight: 500; transition: 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #3e4451; color: #fff; }
+        .btn-share { background: var(--accent); color: #181a1f; font-weight: 600; }
+        .btn-share:hover { background: #4b9ee6; }
+
+        /* Layout */
+        .main-layout { display: flex; flex: 1; height: calc(100vh - 65px); }
+
+        .activity-bar {
+            width: 50px; background-color: var(--bg-base); display: flex; flex-direction: column; 
+            align-items: center; padding-top: 10px; border-right: 1px solid var(--border); gap: 20px;
+        }
+        .activity-icon { color: var(--text-muted); font-size: 20px; cursor: pointer; transition: 0.2s; }
+        .activity-icon:hover, .activity-icon.active { color: #fff; }
+        .activity-icon.active { border-left: 2px solid var(--accent); padding-left: -2px; }
+
+        .sidebar {
+            width: 250px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 12px 15px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; 
+            font-weight: 600; color: var(--text-main);
+        }
+        .collaborator-list { padding: 0 10px; display: flex; flex-direction: column; gap: 5px; }
+        .collaborator {
+            display: flex; align-items: center; gap: 10px; padding: 6px 10px; 
+            border-radius: 4px; font-size: 13px;
+        }
+        .avatar {
+            width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; 
+            justify-content: center; color: var(--bg-base); font-weight: bold; font-size: 12px;
+        }
+
+        .editor-container {
+            flex: 1; display: flex; flex-direction: column; background-color: var(--bg-editor); min-width: 0;
+        }
+        .CodeMirror {
+            flex: 1; height: 100%; font-family: 'JetBrains Mono', monospace;
+            font-size: 14px; background-color: var(--bg-editor) !important;
+        }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-base); }
+        ::-webkit-scrollbar-thumb { background: #4b5363; border-radius: 5px; }
+
+        .status-bar {
+            height: 25px; background-color: var(--accent); color: var(--bg-base); display: flex; 
+            justify-content: space-between; align-items: center; padding: 0 15px; font-size: 12px; font-weight: 500;
+        }
+        .status-left, .status-right { display: flex; gap: 15px; align-items: center; }
+
+        .CodeMirror-hints { background: var(--bg-hover); color: var(--text-main); border: 1px solid #444; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 13px;}
+        .CodeMirror-hint { color: var(--text-main); }
+        .CodeMirror-hint-active { background: var(--accent); color: #181a1f; }
+
+        /* NEW: Remote Cursor Styles */
+        .remote-cursor {
+            border-left: 2px solid;
+            position: relative;
+            z-index: 10;
+            display: inline-block;
+            height: 1.2em;
+            vertical-align: middle;
+        }
+        .remote-cursor-flag {
+            position: absolute;
+            top: -18px;
+            left: -2px;
+            padding: 2px 6px;
+            font-size: 10px;
+            color: #181a1f;
+            border-radius: 2px;
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            font-weight: bold;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
     </style>
 </head>
 <body>
-    <div class="header">Real-Time Cloud Editor (Share URL to Collaborate)</div>
-    
-    <textarea id="code-editor"></textarea>
+
+    <header class="topbar">
+        <div class="brand"><i class="fa-solid fa-cloud"></i> CloudIDE</div>
+        <div class="topbar-actions">
+            <button class="btn btn-share" onclick="copyUrl()"><i class="fa-solid fa-user-plus"></i> Share</button>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <div class="activity-bar">
+            <i class="fa-regular fa-file-code activity-icon" title="Explorer"></i>
+            <i class="fa-solid fa-users activity-icon active" title="Collaborators"></i>
+            <i class="fa-solid fa-gear activity-icon" style="margin-top: auto; margin-bottom: 15px;" title="Settings"></i>
+        </div>
+
+        <aside class="sidebar">
+            <div class="sidebar-header">Live Session</div>
+            <div class="collaborator-list" id="collaborator-list"></div>
+        </aside>
+
+        <main class="editor-container">
+            <textarea id="code-editor"></textarea>
+        </main>
+    </div>
+
+    <footer class="status-bar">
+        <div class="status-left">
+            <span><i class="fa-solid fa-code-branch"></i> main</span>
+        </div>
+        <div class="status-right">
+            <span id="cursor-pos">Ln 1, Col 1</span>
+            <span id="connection-status"><i class="fa-solid fa-wifi"></i> Connecting...</span>
+        </div>
+    </footer>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/javascript-hint.min.js"></script>
+    
     <script src="script.js"></script>
+
+    <script>
+        function copyUrl() {
+            navigator.clipboard.writeText(window.location.href);
+            const btn = document.querySelector('.btn-share');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+            setTimeout(() => btn.innerHTML = originalText, 2000);
+        }
+    </script>
 </body>
 </html>

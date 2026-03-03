@@ -6,25 +6,43 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve static files from the "public" folder
 app.use(express.static('public'));
 
-// Handle Real-Time Connections
-io.on('connection', (socket) => {
-    console.log('A user connected: ' + socket.id);
+const connectedUsers = new Map();
+let guestCounter = 1;
 
-    // Listen for code changes from a client
+io.on('connection', (socket) => {
+    // 1. Get the username sent from the frontend prompt
+    let username = socket.handshake.query.username;
+    
+    // 2. If they left it blank, assign a Guest number
+    if (!username || username.trim() === '') {
+        username = 'Guest-' + guestCounter;
+        guestCounter++;
+    }
+    
+    connectedUsers.set(socket.id, username);
+    console.log(`${username} connected. Total: ${connectedUsers.size}`);
+
+    io.emit('users-update', Array.from(connectedUsers.values()));
+
     socket.on('code-change', (code) => {
-        // Broadcast this change to EVERYONE else (except the sender)
         socket.broadcast.emit('code-update', code);
     });
 
+    socket.on('cursor-change', (pos) => {
+        socket.broadcast.emit('cursor-update', {
+            username: connectedUsers.get(socket.id),
+            pos: pos
+        });
+    });
+
     socket.on('disconnect', () => {
-        console.log('User disconnected');
+        connectedUsers.delete(socket.id);
+        io.emit('users-update', Array.from(connectedUsers.values()));
     });
 });
 
-// Use the port the cloud provider gives us, or 3000 locally
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
